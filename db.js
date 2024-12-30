@@ -13,7 +13,9 @@ const todo = new Schema({
     title: String,
     done: Boolean,
     userId: ObjectId,
-    description: String
+    description: String,
+    currentTime: { type: Date, default: Date.now },
+    finishBy: String
 });
 
 const UserModel = mongoose.model("users", User);

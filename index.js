@@ -1,7 +1,8 @@
 require('dotenv').config(); 
 const express = require('express');
 const app = express()
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcrypt');
+const emailValidator = require('deep-email-validator')
 const { UserModel, TodoModel } = require('./db.js')
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
@@ -22,6 +23,12 @@ app.post("/signup", async function(req, res) {
         return res.status(400).json({
             message: "all fields are required"
         })
+    }
+
+    const {valid, reason, validators} = await emailValidator.validate(email);
+
+    if(!valid){
+        return res.status(403).json({message: `Invalid Email`, reason: validators[reason].reason})
     }
 
     const existingUser = await UserModel.findOne({ email });
@@ -84,10 +91,8 @@ app.post('/signin', async(req, res) => {
 app.post('/todo', async(req, res) => {
     try{
     const token = req.headers.token;
-    const title = req.body.title;
-    const description = req.body.description;
-
-    console.log(token);
+    const { title, description, time } = req.body;
+    const newDate = new Date();
 
     if(token === undefined) {
         return res.json({ message: `authorization token missing` })
@@ -104,6 +109,8 @@ app.post('/todo', async(req, res) => {
             userId: isUser.id,
             title: title,
             description: description,
+            currentTime: newDate,
+            finishBy: time,
             done: false
         })
     
@@ -133,12 +140,18 @@ app.get('/todos', async(req,res)=> {
     const formatedTodo = todos.map(todo=> ({
         title: todo.title,
         description: todo.description,
-        done: todo.done ? "done" : "not done yet"
+        done: todo.done ? "done" : "not done yet",
+        created: todo.currentTime ? new Date(todo.currentTime).toString() : "No date available",
+        finishBy: todo.finishBy
     }));
 
     res.json({
         message:formatedTodo
     })
+})
+
+app.post('/donetodo', async(req, res) => {
+    console.log('kaal karunga')
 })
 
 app.listen(port, ()=> console.log("server is running at http://localhost:3000"))
